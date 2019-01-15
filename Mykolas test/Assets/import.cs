@@ -27,6 +27,7 @@ public class import : MonoBehaviour
     public Transform container;
     public GameObject objectCard;
     public string objectDataFolder;
+    public float downloadProgress = 0;
 
     void Start()
     {
@@ -53,39 +54,58 @@ public class import : MonoBehaviour
             PopulateContainer();
         }
     }
-    public IEnumerator DownloadObject(ImportObject importObject, Button button)
+    public IEnumerator DownloadObject(ImportObject importObject, Button button, Image panel)
     {
         button.onClick.RemoveAllListeners();
-        UnityWebRequest www = UnityWebRequest.Get(importObject.objectPath);//load mesh
-        yield return www.SendWebRequest();
-        
-        if (www.isNetworkError || www.isHttpError) { Debug.Log(www.error); }
+
+        string objectPath = Path.Combine(objectDataFolder, importObject.name + ".obj");
+        string texturePath = Path.Combine(objectDataFolder, importObject.name + "_texture.png");
+        if (File.Exists(objectPath) && File.Exists(texturePath))
+        {
+            ButtonToLoad(importObject, button, panel);
+        }
         else
         {
-            string objectPath = Path.Combine(objectDataFolder, importObject.name + ".obj");
-            File.WriteAllBytes(objectPath, www.downloadHandler.data);
+            Text buttonText = button.gameObject.GetComponentInChildren<Text>();
+            buttonText.text = "Downloading...";
 
-            www = UnityWebRequestTexture.GetTexture(importObject.texturePath); //load texture
+            UnityWebRequest www = UnityWebRequest.Get(importObject.objectPath);//load mesh
             yield return www.SendWebRequest();
-        
+
             if (www.isNetworkError || www.isHttpError) { Debug.Log(www.error); }
             else
             {
-                string texturePath = Path.Combine(objectDataFolder, importObject.name + "_texture.png");
+                
+                File.WriteAllBytes(objectPath, www.downloadHandler.data);
+            }
+
+            www = UnityWebRequestTexture.GetTexture(importObject.texturePath); //load texture
+            yield return www.SendWebRequest();
+            if (www.isNetworkError || www.isHttpError) { Debug.Log(www.error); }
+            else
+            {
+                
                 //Texture loadedObjectTexture = ((DownloadHandlerTexture)www.downloadHandler).texture;
                 File.WriteAllBytes(texturePath, www.downloadHandler.data);
                 //loadedObject.GetComponentInChildren<MeshRenderer>().material.mainTexture = loadedObjectTexture;
-
-                if (button != null)
-                {
-                    button.onClick.AddListener(()=>LoadObject(importObject));
-                    ColorBlock cb = button.colors;
-                    cb.normalColor = Color.green;
-                    button.colors = cb;
-                }
+                ButtonToLoad(importObject, button, panel);
             }
-        
         }
+    }
+
+    public void ButtonToLoad(ImportObject importObject, Button button, Image panel)
+    {
+        if (button != null)
+        {
+            Text buttonText = button.gameObject.GetComponentInChildren<Text>();
+            buttonText.text = "Load";
+            button.onClick.AddListener(() => LoadObject(importObject));
+            //ColorBlock cb = button.colors;
+            //cb.normalColor = Color.green;
+            //button.colors = cb;
+            panel.color = new Color(0, 255, 0);
+        }
+        
     }
     public void LoadObject(ImportObject importObject)
     {
@@ -104,11 +124,14 @@ public class import : MonoBehaviour
         foreach (var import in importObjects.importObjects)
         {
             GameObject temp = Instantiate(objectCard, container);
-            Button tempButton = temp.GetComponent<Button>();
-            Text text = temp.GetComponentInChildren<Text>();
-            text.text = import.name;
+            Image panel = temp.GetComponent<Image>();
+            Button tempButton = temp.GetComponentInChildren<Button>();
+            Text buttonText = tempButton.gameObject.GetComponentInChildren<Text>();
+            buttonText.text = "Download";
+            Text panelText = temp.GetComponentsInChildren<Text>()[0];
+            panelText.text = import.name;
             tempButton.gameObject.GetComponent<ButtonData>().ImportObject = import;
-            tempButton.onClick.AddListener(() => StartCoroutine( DownloadObject(tempButton.gameObject.GetComponent<ButtonData>().ImportObject, tempButton)));
+            tempButton.onClick.AddListener(() => StartCoroutine( DownloadObject(tempButton.gameObject.GetComponent<ButtonData>().ImportObject, tempButton, panel)));
         }
     }
     public ImportObjects CreateFromJSON(string jsonString)
