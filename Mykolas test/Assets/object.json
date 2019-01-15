@@ -1,0 +1,15 @@
+{
+
+  "importObjects": [
+    {
+      "name": "banana",
+      "objectPath": "https://github.com/saint66735/some-.objs/blob/master/banana/banana.obj?raw=true",
+      "texturePath": "https://github.com/saint66735/some-.objs/blob/master/banana/banana_texture.png?raw=true"
+    },
+    {
+      "name": "cube",
+      "objectPath": "https://github.com/saint66735/some-.objs/blob/master/cube/Cube.obj?raw=true",
+      "texturePath": "https://github.com/saint66735/some-.objs/blob/master/banana/banana_texture.png?raw=true"
+    }
+  ]
+}
